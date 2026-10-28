@@ -19,6 +19,27 @@ class TaskSequencerService:
         self.rag = rag_engine
 
     async def get_next_step(self, req: SequenceRequest) -> SequenceResponse:
+        # 0. If taskId is provided and no specific obstacle was given, check for existing pending subtask
+        if req.taskId and not req.obstacle:
+            existing_task = repository.get_task(req.taskId)
+            if existing_task and existing_task.currentMicroTask:
+                m = existing_task.currentMicroTask
+                now_str = datetime.now(timezone.utc).isoformat()
+                return SequenceResponse(
+                    taskId=req.taskId,
+                    stepId=m.id,
+                    stepOrder=m.stepOrder or 1,
+                    totalSteps=existing_task.totalStepsCount or len(existing_task.subtasks),
+                    actionText=m.actionText,
+                    suggestedDurationMinutes=m.suggestedDurationMinutes,
+                    encouragement=m.encouragement,
+                    whyItIsManageable=m.whyItIsManageable,
+                    alternativeSmallerStep=m.alternativeSmallerStep or "Take a slow breath and open the workspace.",
+                    sourceReferences=m.sourceReferences,
+                    isFallback=m.isFallback,
+                    timestamp=now_str,
+                )
+
         # 1. Formulate search query for RAG
         search_terms = f"{req.taskTitle} {req.energyLevel or ''} {req.obstacle or ''} initiation micro-step"
         retrieved_results = self.rag.search(search_terms, top_k=settings.rag_top_k)
@@ -49,8 +70,9 @@ class TaskSequencerService:
         is_fallback = provider.provider_name == "mock" or not settings.enable_remote_ai
 
         # 3. Save to database if taskId provided
+        saved_m = None
         if req.taskId:
-            repository.save_micro_task(
+            saved_m = repository.save_micro_task(
                 task_id=req.taskId,
                 action_text=ai_result["actionText"],
                 suggested_duration_minutes=int(ai_result.get("suggestedDurationMinutes", 3)),
@@ -64,6 +86,9 @@ class TaskSequencerService:
         now_str = datetime.now(timezone.utc).isoformat()
         return SequenceResponse(
             taskId=req.taskId,
+            stepId=saved_m.id if saved_m else None,
+            stepOrder=saved_m.stepOrder if saved_m else 1,
+            totalSteps=4,
             actionText=ai_result["actionText"],
             suggestedDurationMinutes=int(ai_result.get("suggestedDurationMinutes", 3)),
             encouragement=ai_result.get("encouragement", "Small steps."),

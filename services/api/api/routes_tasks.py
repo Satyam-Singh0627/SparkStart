@@ -47,9 +47,33 @@ async def delete_task(task_id: str):
 
 
 @router.post("/{task_id}/step-done", response_model=TaskResponse)
-async def mark_step_done(task_id: str):
-    task = repository.increment_completed_steps(task_id)
+async def mark_step_done(task_id: str, step_id: Optional[str] = Query(None)):
+    task = repository.increment_completed_steps(task_id, step_id=step_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
+
+
+@router.post("/{task_id}/steps/{step_id}/done", response_model=TaskResponse)
+async def mark_specific_step_done(task_id: str, step_id: str):
+    task = repository.increment_completed_steps(task_id, step_id=step_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@router.post("/{task_id}/reopen", response_model=TaskResponse)
+async def reopen_task(task_id: str):
+    task = repository.reopen_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@router.get("/{task_id}/subtasks")
+async def get_task_subtasks(task_id: str):
+    task = repository.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task.subtasks
 
