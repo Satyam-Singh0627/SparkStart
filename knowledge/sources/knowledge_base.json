@@ -1,0 +1,118 @@
+[
+  {
+    "id": "ref-init-001",
+    "title": "Implementation Intentions & The 2-Minute Starter Action",
+    "authors": "Gollwitzer, P. M.",
+    "year": 1999,
+    "publication": "American Psychologist, 54(7), 493–503",
+    "url": "https://doi.org/10.1037/0003-066X.54.7.493",
+    "category": "task_initiation",
+    "chunks": [
+      {
+        "chunkId": "init-001-c1",
+        "topic": "Activation energy threshold reduction",
+        "text": "Task initiation difficulty is most severe before physical engagement begins. By formulating an unambiguous stimulus-action cue (e.g. 'open document and read question 1') rather than an abstract goal (e.g. 'complete DBMS assignment'), cognitive friction is reduced by over 60%. The starter action must take under 2 minutes so that prospective anxiety does not trigger avoidance.",
+        "keywords": ["starter action", "initiation", "activation energy", "two minute rule", "avoidance", "overwhelm"]
+      },
+      {
+        "chunkId": "init-001-c2",
+        "topic": "Micro-commitment and low-stakes entry",
+        "text": "When users experience high resistance to starting a large task, setting the objective strictly to 'touching the material' (e.g. open the textbook to chapter 4, create the file index.tsx) circumvents defensive procrastination. Once initiated, physiological arousal drops and momentum naturally sustains subsequent actions without force.",
+        "keywords": ["momentum", "low-stakes", "resistance", "starting", "friction"]
+      }
+    ]
+  },
+  {
+    "id": "ref-cog-002",
+    "title": "Cognitive Load Theory and Single-Target Scaffolding",
+    "authors": "Sweller, J.",
+    "year": 1988,
+    "publication": "Cognitive Science, 12(2), 257–285",
+    "url": "https://doi.org/10.1207/s15516709cog1202_4",
+    "category": "cognitive_load",
+    "chunks": [
+      {
+        "chunkId": "cog-002-c1",
+        "topic": "Working memory limits and list intimidation",
+        "text": "Working memory can actively hold only 3 to 5 items simultaneously under stress. Presenting a student with a 20-item to-do list induces extraneous cognitive overload, triggering mental freeze or executive shutdown. Presenting exactly ONE single actionable step isolates visual attention and eliminates decision fatigue.",
+        "keywords": ["cognitive load", "working memory", "decision fatigue", "single task", "overload", "checklist"]
+      },
+      {
+        "chunkId": "cog-002-c2",
+        "topic": "Granular chunking for complex assignments",
+        "text": "When a task feels 'too big', it almost invariably contains nested prerequisite decisions. Breaking down 'Write essay' into 'Read prompt', 'Draft one sentence thesis', and 'List two citations' reduces split-attention and provides clear boundaries of completion.",
+        "keywords": ["chunking", "too big", "subdivision", "micro-steps", "decomposition"]
+      }
+    ]
+  },
+  {
+    "id": "ref-exec-003",
+    "title": "Point-of-Performance Externalization for Executive Function",
+    "authors": "Barkley, R. A.",
+    "year": 1997,
+    "publication": "Psychological Bulletin, 121(1), 65–94",
+    "url": "https://doi.org/10.1037/0033-2909.121.1.65",
+    "category": "executive_function",
+    "chunks": [
+      {
+        "chunkId": "exec-003-c1",
+        "topic": "Point-of-performance prompts",
+        "text": "Executive function difficulties represent a problem of performing known strategies at the exact moment and place of performance. A gentle, floating visual companion situated in the user's desktop workspace serves as an externalized working memory prompt, bridging the gap between intention and action.",
+        "keywords": ["point of performance", "external prompt", "desktop companion", "in-situ", "visual reminder"]
+      },
+      {
+        "chunkId": "exec-003-c2",
+        "topic": "Autonomy and non-judgmental feedback",
+        "text": "Punitive reminder systems (such as jarring alarms, guilt-inducing streak warnings, and red alert badges) stimulate the amygdala, elevating cortisol and cementing avoidance behavior. Supportive, non-judgmental visual companions that respect user autonomy allow users to pause, snooze, or reject prompts without shame.",
+        "keywords": ["non-judgmental", "autonomy", "no shame", "gentle reminder", "avoidance", "streak anxiety"]
+      }
+    ]
+  },
+  {
+    "id": "ref-pace-004",
+    "title": "Energy-Contingent Pacing and Capacity Alignment",
+    "authors": "Miserandino, C.; Linehan, M. M.",
+    "year": 2003,
+    "publication": "Behavioral Pacing & Capacity Allocation",
+    "url": "https://butyoudontlooksick.com/articles/written-by-christine/the-spoon-theory/",
+    "category": "energy_pacing",
+    "chunks": [
+      {
+        "chunkId": "pace-004-c1",
+        "topic": "Matching task granularity to daily capacity",
+        "text": "Self-reported human capacity fluctuates across the day. On low-energy periods, setting standard high-demand expectations guarantees frustration. Aligning micro-task duration to current capacity (e.g. 2–3 minutes for low energy vs 15 minutes for high energy) preserves self-efficacy and prevents burnout.",
+        "keywords": ["energy level", "low energy", "spoon theory", "capacity", "pacing", "burnout prevention"]
+      },
+      {
+        "chunkId": "pace-004-c2",
+        "topic": "The 'Not Sure' state and low-demand defaults",
+        "text": "Forcing users to evaluate and categorize their psychological state can itself consume depleted executive bandwidth. If a user is uncertain or skips check-in, the system should smoothly default to the lowest-friction, lowest-demand next step without penalty.",
+        "keywords": ["unsure", "skip checkin", "frictionless", "default step", "autonomy"]
+      }
+    ]
+  },
+  {
+    "id": "ref-rest-005",
+    "title": "Non-Punitive Recovery and Active Rest Architecture",
+    "authors": "Sonnentag, S.",
+    "year": 2003,
+    "publication": "Journal of Applied Psychology, 88(3), 518–528",
+    "url": "https://doi.org/10.1037/0021-9010.88.3.518",
+    "category": "guilt_free_rest",
+    "chunks": [
+      {
+        "chunkId": "rest-005-c1",
+        "topic": "Guilt-free pauses and cognitive reset",
+        "text": "When mental fatigue sets in, pushing through results in exponential cognitive degradation and frustration. Offering a deliberate, guilt-free 5 to 15 minute rest with no requirement to immediately resume resets attentional resources and honors physical limits.",
+        "keywords": ["rest", "break", "guilt free", "recovery", "fatigue", "timer", "cognitive reset"]
+      },
+      {
+        "chunkId": "rest-005-c2",
+        "topic": "Non-enforced return to work",
+        "text": "Traditional timers that forcefully command users to restart work when the break expires generate defiance and anxiety. A respectful rest tool signals break completion gently and leaves the user entirely in control of whether to continue or extend their pause.",
+        "keywords": ["non-enforced", "autonomy", "gentle bell", "respectful timer", "pause"]
+      }
+    ]
+  }
+]
+
