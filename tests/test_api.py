@@ -81,6 +81,41 @@ def test_task_crud():
     assert del_res.json()["deleted"] is True
 
 
+def test_task_decomposition_and_completion_lifecycle():
+    # 1. Create task
+    create_res = client.post(
+        "/api/tasks",
+        json={"title": "Write Python Unit Tests", "energy": "medium"},
+    )
+    assert create_res.status_code == 200
+    task = create_res.json()
+    task_id = task["id"]
+    assert len(task.get("subtasks", [])) > 0
+    subtasks = task["subtasks"]
+    assert subtasks[0]["stepOrder"] == 1
+    total_steps = len(subtasks)
+
+    # 2. Advance step by step using subtask id
+    for step in subtasks:
+        res = client.post(f"/api/tasks/{task_id}/steps/{step['id']}/done")
+        assert res.status_code == 200
+
+    # 3. Verify task is completed
+    updated_task = client.get(f"/api/tasks/{task_id}").json()
+    assert updated_task["status"] == "completed"
+    assert updated_task["completedStepsCount"] == total_steps
+
+    # 4. Reopen task
+    reopen_res = client.post(f"/api/tasks/{task_id}/reopen")
+    assert reopen_res.status_code == 200
+    reopened = reopen_res.json()
+    assert reopened["status"] == "in_progress"
+    assert reopened["completedStepsCount"] == total_steps - 1
+
+    # Cleanup
+    client.delete(f"/api/tasks/{task_id}")
+
+
 def test_adaptive_sequencing_flow():
     # Create a task
     t_res = client.post(

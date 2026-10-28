@@ -6,8 +6,9 @@ const server = http.createServer((req, res) => {
   res.writeHead(302, {
     'Location': targetUrl,
     'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'text/html',
   });
-  res.end(`Redirecting to ${targetUrl}`);
+  res.end(`<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${targetUrl}"></head><body>Redirecting to <a href="${targetUrl}">${targetUrl}</a></body></html>`);
 });
 
 server.on('error', (err) => {

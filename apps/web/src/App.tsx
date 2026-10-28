@@ -26,6 +26,7 @@ import {
   fetchTasks,
   createTask,
   markTaskStepDone,
+  reopenTask,
   deleteTask,
   requestNextStep,
   requestShrinkStep,
@@ -173,6 +174,26 @@ export const App: React.FC = () => {
       setSelectedEnergy(task.energy);
     }
 
+    // Immediately resolve active subtask if already decomposed so UI renders instantly
+    const pendingSubtask = task.subtasks?.find((s) => s.status !== 'completed') || (task.currentMicroTask?.status !== 'completed' ? task.currentMicroTask : null);
+    if (pendingSubtask) {
+      setCurrentMicroTask({
+        taskId: task.id,
+        stepId: pendingSubtask.id,
+        stepOrder: pendingSubtask.stepOrder || 1,
+        totalSteps: task.totalStepsCount || task.subtasks?.length || 4,
+        actionText: pendingSubtask.actionText,
+        suggestedDurationMinutes: pendingSubtask.suggestedDurationMinutes || 2,
+        encouragement: pendingSubtask.encouragement || 'Small steps lead to real progress.',
+        whyItIsManageable: pendingSubtask.whyItIsManageable || 'Low stakes and quick to complete.',
+        alternativeSmallerStep: pendingSubtask.alternativeSmallerStep || 'Open the task and view the title.',
+        sourceReferences: pendingSubtask.sourceReferences || [],
+        isFallback: pendingSubtask.isFallback || false,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const step = await requestNextStep({
@@ -189,18 +210,48 @@ export const App: React.FC = () => {
     }
   };
 
-  // Step completed: marks progress, updates database, and advances to next step
-  const handleStepDone = async () => {
+  // Step completed: marks progress, updates database, and advances to next step or celebrates completion
+  const handleStepDone = async (stepId?: string) => {
     if (!activeTaskId) {
       setCurrentMicroTask(null);
       return;
     }
+    const targetStepId = stepId || currentMicroTask?.stepId;
     try {
-      const updated = await markTaskStepDone(activeTaskId);
+      const updated = await markTaskStepDone(activeTaskId, targetStepId);
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+
+      // If the parent task is now marked completed:
+      const totalSteps = updated.totalStepsCount ?? (updated.subtasks ? updated.subtasks.length : 0);
+      if (updated.status === 'completed' || (totalSteps > 0 && updated.completedStepsCount >= totalSteps)) {
+        setCurrentMicroTask(null);
+        setStatusMessage(`🎉 Victory! You completed all steps for "${updated.title}". Task moved to Completed.`);
+        return;
+      }
+
       setStatusMessage(`Nice work! Step completed. That makes ${updated.completedStepsCount} step(s) done.`);
-      
-      // Advance to next step for the active task
+
+      // Check if there is an existing incomplete subtask in the updated task
+      const nextPendingSubtask = updated.subtasks?.find((s) => s.status !== 'completed');
+      if (nextPendingSubtask) {
+        setCurrentMicroTask({
+          taskId: updated.id,
+          stepId: nextPendingSubtask.id,
+          stepOrder: nextPendingSubtask.stepOrder || 1,
+          totalSteps: totalSteps || 4,
+          actionText: nextPendingSubtask.actionText,
+          suggestedDurationMinutes: nextPendingSubtask.suggestedDurationMinutes || 2,
+          encouragement: nextPendingSubtask.encouragement || 'One more small step done. Keep going!',
+          whyItIsManageable: nextPendingSubtask.whyItIsManageable || 'Low stakes and quick to complete.',
+          alternativeSmallerStep: nextPendingSubtask.alternativeSmallerStep || 'Open the task and view the title.',
+          sourceReferences: nextPendingSubtask.sourceReferences || [],
+          isFallback: nextPendingSubtask.isFallback || false,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      // Otherwise query next step
       setIsLoading(true);
       try {
         const nextStep = await requestNextStep({
@@ -217,6 +268,17 @@ export const App: React.FC = () => {
     } catch (e) {
       console.error(e);
       setCurrentMicroTask(null);
+    }
+  };
+
+  const handleReopenTask = async (taskId: string) => {
+    try {
+      const reopened = await reopenTask(taskId);
+      setTasks((prev) => prev.map((t) => (t.id === reopened.id ? reopened : t)));
+      setStatusMessage(`Reopened "${reopened.title}". Ready whenever you are.`);
+      return reopened;
+    } catch (err) {
+      console.error('Failed to reopen task:', err);
     }
   };
 
@@ -416,6 +478,7 @@ export const App: React.FC = () => {
                     onDismiss={handleDismiss}
                     onSkip={handleSkip}
                     isLoading={isLoading}
+                    subtasks={tasks.find((t) => t.id === activeTaskId)?.subtasks}
                   />
                 </div>
               ) : (
@@ -499,7 +562,8 @@ export const App: React.FC = () => {
               onSelectTask={handleSelectTaskFromList}
               onCreateTask={handleCreateTaskFromList}
               onDeleteTask={handleDeleteTask}
-              onMarkDone={markTaskStepDone}
+              onMarkDone={handleStepDone}
+              onReopenTask={handleReopenTask}
             />
           </div>
         )}
