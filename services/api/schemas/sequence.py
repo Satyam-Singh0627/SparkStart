@@ -20,6 +20,9 @@ class SequenceRequest(BaseModel):
 
 class SequenceResponse(BaseModel):
     taskId: Optional[str] = None
+    stepId: Optional[str] = None
+    stepOrder: Optional[int] = None
+    totalSteps: Optional[int] = None
     actionText: str
     suggestedDurationMinutes: int
     encouragement: str

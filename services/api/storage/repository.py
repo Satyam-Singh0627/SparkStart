@@ -34,34 +34,106 @@ class LocalRepository:
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO tasks (id, title, description, energy, status, deadline, completed_steps_count, created_at, updated_at)
-            VALUES (?, ?, ?, ?, 'todo', ?, 0, ?, ?)
+            INSERT INTO tasks (id, title, description, energy, status, deadline, completed_steps_count, total_steps_count, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 'todo', ?, 0, 0, ?, ?)
             """,
             (task_id, task_in.title, task_in.description, task_in.energy or "unsure", task_in.deadline, now, now),
         )
         conn.commit()
         conn.close()
+
+        # Automatically decompose parent task into concrete micro-steps
+        self.auto_decompose_task(task_id, task_in.title, task_in.energy or "unsure")
         return self.get_task(task_id)
 
-    def get_task(self, task_id: str) -> Optional[TaskResponse]:
+    def auto_decompose_task(self, task_id: str, title: str, energy: str) -> List[MicroTaskResponse]:
+        from services.api.ai.mock_provider import MockAIProvider
+        provider = MockAIProvider()
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                steps_data = executor.submit(lambda: asyncio.run(provider.generate_task_plan(title, energy))).result()
+        else:
+            steps_data = asyncio.run(provider.generate_task_plan(title, energy))
+
         conn = self._conn()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
-        row = cursor.fetchone()
-        if not row:
-            conn.close()
-            return None
+        now = _now_iso()
+        for idx, s in enumerate(steps_data, start=1):
+            m_id = str(uuid.uuid4())
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO micro_tasks (
+                        id, task_id, action_text, suggested_duration_minutes, status, step_order,
+                        encouragement, why_manageable, alternative_step, source_refs_json, is_fallback, created_at
+                    )
+                    VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?, '[]', 1, ?)
+                    """,
+                    (
+                        m_id,
+                        task_id,
+                        s["actionText"],
+                        int(s["suggestedDurationMinutes"]),
+                        idx,
+                        s.get("encouragement", "Small steps."),
+                        s.get("whyItIsManageable", "Manageable starting action."),
+                        s.get("alternativeSmallerStep", ""),
+                        now,
+                    ),
+                )
+            except Exception:
+                cursor.execute(
+                    """
+                    INSERT INTO micro_tasks (
+                        id, task_id, action_text, suggested_duration_minutes, status,
+                        encouragement, why_manageable, alternative_step, source_refs_json, is_fallback, created_at
+                    )
+                    VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, '[]', 1, ?)
+                    """,
+                    (
+                        m_id,
+                        task_id,
+                        s["actionText"],
+                        int(s["suggestedDurationMinutes"]),
+                        s.get("encouragement", "Small steps."),
+                        s.get("whyItIsManageable", "Manageable starting action."),
+                        s.get("alternativeSmallerStep", ""),
+                        now,
+                    ),
+                )
+        try:
+            cursor.execute("UPDATE tasks SET total_steps_count = ? WHERE id = ?", (len(steps_data), task_id))
+        except Exception:
+            pass
+        conn.commit()
+        conn.close()
+        return self.get_subtasks(task_id)
 
-        # Fetch active or latest microtask if any
-        cursor.execute(
-            "SELECT * FROM micro_tasks WHERE task_id = ? ORDER BY created_at DESC LIMIT 1",
-            (task_id,),
-        )
-        m_row = cursor.fetchone()
+    def get_subtasks(self, task_id: str) -> List[MicroTaskResponse]:
+        conn = self._conn()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT * FROM micro_tasks WHERE task_id = ? ORDER BY step_order ASC, created_at ASC",
+                (task_id,),
+            )
+        except Exception:
+            cursor.execute(
+                "SELECT * FROM micro_tasks WHERE task_id = ? ORDER BY created_at ASC",
+                (task_id,),
+            )
+        rows = cursor.fetchall()
         conn.close()
 
-        micro_task = None
-        if m_row:
+        subtasks = []
+        for idx, m_row in enumerate(rows, start=1):
             source_refs = []
             if m_row["source_refs_json"]:
                 try:
@@ -70,31 +142,80 @@ class LocalRepository:
                 except Exception:
                     pass
 
-            micro_task = MicroTaskResponse(
-                id=m_row["id"],
-                taskId=m_row["task_id"],
-                actionText=m_row["action_text"],
-                suggestedDurationMinutes=m_row["suggested_duration_minutes"],
-                status=m_row["status"],
-                encouragement=m_row["encouragement"],
-                whyItIsManageable=m_row["why_manageable"],
-                alternativeSmallerStep=m_row["alternative_step"],
-                sourceReferences=source_refs,
-                isFallback=bool(m_row["is_fallback"]),
-                createdAt=m_row["created_at"],
+            step_order = idx
+            try:
+                step_order = m_row["step_order"] if m_row["step_order"] is not None else idx
+            except Exception:
+                pass
+
+            subtasks.append(
+                MicroTaskResponse(
+                    id=m_row["id"],
+                    taskId=m_row["task_id"],
+                    actionText=m_row["action_text"],
+                    suggestedDurationMinutes=m_row["suggested_duration_minutes"],
+                    status=m_row["status"],
+                    stepOrder=step_order,
+                    encouragement=m_row["encouragement"],
+                    whyItIsManageable=m_row["why_manageable"],
+                    alternativeSmallerStep=m_row["alternative_step"],
+                    sourceReferences=source_refs,
+                    isFallback=bool(m_row["is_fallback"]),
+                    createdAt=m_row["created_at"],
+                )
             )
+        return subtasks
+
+    def get_task(self, task_id: str) -> Optional[TaskResponse]:
+        conn = self._conn()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+        row = cursor.fetchone()
+        conn.close()
+        if not row:
+            return None
+
+        subtasks = self.get_subtasks(task_id)
+        if not subtasks and row["status"] != "completed":
+            subtasks = self.auto_decompose_task(task_id, row["title"], row["energy"] or "unsure")
+
+        completed_count = sum(1 for s in subtasks if s.status == "completed")
+        total_count = len(subtasks)
+
+        # Identify the next active incomplete step
+        active_step = None
+        for s in subtasks:
+            if s.status != "completed":
+                active_step = s
+                break
+
+        status = row["status"]
+        if total_count > 0 and completed_count >= total_count:
+            if status != "completed":
+                status = "completed"
+                conn = self._conn()
+                conn.cursor().execute(
+                    "UPDATE tasks SET status = 'completed', completed_steps_count = ? WHERE id = ?",
+                    (completed_count, task_id),
+                )
+                conn.commit()
+                conn.close()
+        elif completed_count > 0 and status == "todo":
+            status = "in_progress"
 
         return TaskResponse(
             id=row["id"],
             title=row["title"],
             description=row["description"],
             energy=row["energy"],
-            status=row["status"],
+            status=status,
             deadline=row["deadline"],
-            completedStepsCount=row["completed_steps_count"],
+            completedStepsCount=completed_count,
+            totalStepsCount=total_count,
+            subtasks=subtasks,
             createdAt=row["created_at"],
             updatedAt=row["updated_at"],
-            currentMicroTask=micro_task,
+            currentMicroTask=active_step,
         )
 
     def list_tasks(self, status: Optional[str] = None) -> List[TaskResponse]:
@@ -150,19 +271,122 @@ class LocalRepository:
         conn.close()
         return self.get_task(task_id)
 
-    def increment_completed_steps(self, task_id: str) -> Optional[TaskResponse]:
+    def increment_completed_steps(self, task_id: str, step_id: Optional[str] = None) -> Optional[TaskResponse]:
         conn = self._conn()
         cursor = conn.cursor()
         now = _now_iso()
+
+        # Check if task exists
+        cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return None
+
+        # 1. Mark specific or first incomplete subtask as completed
+        if step_id:
+            cursor.execute(
+                "UPDATE micro_tasks SET status = 'completed' WHERE id = ? AND task_id = ?",
+                (step_id, task_id),
+            )
+        else:
+            try:
+                cursor.execute(
+                    "SELECT id FROM micro_tasks WHERE task_id = ? AND status != 'completed' ORDER BY step_order ASC, created_at ASC LIMIT 1",
+                    (task_id,),
+                )
+            except Exception:
+                cursor.execute(
+                    "SELECT id FROM micro_tasks WHERE task_id = ? AND status != 'completed' ORDER BY created_at ASC LIMIT 1",
+                    (task_id,),
+                )
+            row = cursor.fetchone()
+            if row:
+                cursor.execute(
+                    "UPDATE micro_tasks SET status = 'completed' WHERE id = ?",
+                    (row["id"],),
+                )
+
+        # 2. Count completed and total steps
         cursor.execute(
-            """
-            UPDATE tasks
-            SET completed_steps_count = completed_steps_count + 1,
-                status = 'in_progress',
-                updated_at = ?
-            WHERE id = ?
-            """,
-            (now, task_id),
+            "SELECT COUNT(*) as c FROM micro_tasks WHERE task_id = ? AND status = 'completed'",
+            (task_id,),
+        )
+        completed_count = cursor.fetchone()["c"]
+
+        cursor.execute(
+            "SELECT COUNT(*) as total FROM micro_tasks WHERE task_id = ?",
+            (task_id,),
+        )
+        total_count = cursor.fetchone()["total"]
+
+        # Ensure completed_count is at least incremented if no subtasks existed
+        if total_count == 0:
+            cursor.execute("SELECT completed_steps_count FROM tasks WHERE id = ?", (task_id,))
+            prev = cursor.fetchone()["completed_steps_count"] or 0
+            completed_count = prev + 1
+
+        new_status = "completed" if (total_count > 0 and completed_count >= total_count) else "in_progress"
+
+        try:
+            cursor.execute(
+                """
+                UPDATE tasks
+                SET completed_steps_count = ?,
+                    total_steps_count = ?,
+                    status = ?,
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (completed_count, total_count, new_status, now, task_id),
+            )
+        except Exception:
+            cursor.execute(
+                """
+                UPDATE tasks
+                SET completed_steps_count = ?,
+                    status = ?,
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (completed_count, new_status, now, task_id),
+            )
+        conn.commit()
+        conn.close()
+        return self.get_task(task_id)
+
+    def reopen_task(self, task_id: str) -> Optional[TaskResponse]:
+        conn = self._conn()
+        cursor = conn.cursor()
+        now = _now_iso()
+
+        # Check if task exists
+        cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return None
+
+        # Reopen the last completed subtask so user can continue
+        try:
+            cursor.execute(
+                """
+                UPDATE micro_tasks SET status = 'pending' WHERE id IN (
+                    SELECT id FROM micro_tasks WHERE task_id = ? ORDER BY step_order DESC, created_at DESC LIMIT 1
+                )
+                """,
+                (task_id,),
+            )
+        except Exception:
+            pass
+
+        cursor.execute(
+            "SELECT COUNT(*) as c FROM micro_tasks WHERE task_id = ? AND status = 'completed'",
+            (task_id,),
+        )
+        comp = cursor.fetchone()["c"]
+
+        cursor.execute(
+            "UPDATE tasks SET status = 'in_progress', completed_steps_count = ?, updated_at = ? WHERE id = ?",
+            (comp, now, task_id),
         )
         conn.commit()
         conn.close()

@@ -19,6 +19,7 @@ class MicroTaskResponse(BaseModel):
     actionText: str
     suggestedDurationMinutes: int
     status: str
+    stepOrder: Optional[int] = 1
     encouragement: str
     whyItIsManageable: str
     alternativeSmallerStep: Optional[str] = None
@@ -68,6 +69,8 @@ class TaskResponse(BaseModel):
     status: str = "todo"
     deadline: Optional[str] = None
     completedStepsCount: int = 0
+    totalStepsCount: int = 0
+    subtasks: List[MicroTaskResponse] = Field(default_factory=list)
     createdAt: str
     updatedAt: str
     currentMicroTask: Optional[MicroTaskResponse] = None

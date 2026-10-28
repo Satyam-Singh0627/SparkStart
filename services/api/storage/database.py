@@ -42,6 +42,7 @@ def init_db(db_path: Path | None = None):
         action_text TEXT NOT NULL,
         suggested_duration_minutes INTEGER NOT NULL,
         status TEXT DEFAULT 'suggested',
+        step_order INTEGER DEFAULT 1,
         encouragement TEXT NOT NULL,
         why_manageable TEXT NOT NULL,
         alternative_step TEXT,
@@ -51,6 +52,16 @@ def init_db(db_path: Path | None = None):
         FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE CASCADE
     );
     """)
+
+    # Safe column migrations for existing databases
+    try:
+        cursor.execute("ALTER TABLE micro_tasks ADD COLUMN step_order INTEGER DEFAULT 1;")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE tasks ADD COLUMN total_steps_count INTEGER DEFAULT 0;")
+    except Exception:
+        pass
 
     # Preferences Table
     cursor.execute("""
