@@ -6,9 +6,12 @@ import {
   Calendar,
   Layers,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Check,
   Search,
-  Filter,
+  RotateCcw,
+  ListOrdered,
 } from 'lucide-react';
 import { Task, EnergyLevel } from '@sparkstart/shared';
 
@@ -17,7 +20,8 @@ interface TaskListProps {
   onSelectTask: (task: Task) => void;
   onCreateTask: (title: string, energy: EnergyLevel, description?: string) => Promise<void>;
   onDeleteTask: (taskId: string) => Promise<void>;
-  onMarkDone: (taskId: string) => Promise<any>;
+  onMarkDone: (taskId: string, stepId?: string) => Promise<any>;
+  onReopenTask?: (taskId: string) => Promise<any>;
 }
 
 export const TaskList: React.FC<TaskListProps> = ({
@@ -26,16 +30,25 @@ export const TaskList: React.FC<TaskListProps> = ({
   onCreateTask,
   onDeleteTask,
   onMarkDone,
+  onReopenTask,
 }) => {
-  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('active');
+  const [filter, setFilter] = useState<'active' | 'completed' | 'all'>('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [expandedTaskIds, setExpandedTaskIds] = useState<Record<string, boolean>>({});
 
   // Form state
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newEnergy, setNewEnergy] = useState<EnergyLevel>('unsure');
+
+  const toggleExpand = (taskId: string) => {
+    setExpandedTaskIds((prev) => ({
+      ...prev,
+      [taskId]: !prev[taskId],
+    }));
+  };
 
   const filteredTasks = tasks.filter((t) => {
     // Search query filter
@@ -72,21 +85,21 @@ export const TaskList: React.FC<TaskListProps> = ({
       {/* Top Header & Filter Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold ss-text-primary tracking-tight">
-            My Tasks
+          <h2 className="text-2xl sm:text-3xl font-black ss-text-primary tracking-tight">
+            My Tasks & Projects
           </h2>
           <p className="ss-support mt-1">
-            Zero pressure or punitive deadlines. Select any task to receive a manageable micro-step.
+            Zero pressure or punitive deadlines. Every task is scaffolded into 2-to-5 minute starter steps.
           </p>
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <button
             onClick={() => setShowAddModal(true)}
-            className="ss-btn-primary text-sm py-2.5 px-5 cursor-pointer w-full sm:w-auto"
+            className="ss-btn-primary text-sm py-2.5 px-5 cursor-pointer w-full sm:w-auto flex items-center justify-center gap-2 shadow-sm"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Task</span>
+            <span>Add New Task</span>
           </button>
         </div>
       </div>
@@ -100,7 +113,7 @@ export const TaskList: React.FC<TaskListProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search your tasks..."
+            placeholder="Search your tasks or assignments..."
             className="w-full pl-9 pr-3 py-2 text-sm bg-transparent border-none outline-none ss-text-primary placeholder:ss-text-muted"
           />
         </div>
@@ -144,99 +157,201 @@ export const TaskList: React.FC<TaskListProps> = ({
       {filteredTasks.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-[var(--border)] bg-[var(--bg-card)] p-12 text-center">
           <Layers className="w-12 h-12 ss-text-muted mx-auto mb-3 opacity-60" />
-          <h3 className="text-base font-bold ss-text-primary">No tasks in this view</h3>
+          <h3 className="text-base font-bold ss-text-primary">
+            {filter === 'completed'
+              ? 'No completed tasks yet'
+              : filter === 'active'
+              ? 'No active tasks'
+              : 'No tasks found'}
+          </h3>
           <p className="ss-support mt-1 max-w-sm mx-auto">
             {filter === 'completed'
-              ? 'Completed tasks will be recorded here without pressure.'
-              : 'Add an assignment or project and we will break it into micro-steps.'}
+              ? 'Finished tasks will appear here as gentle victories. Zero pressure!'
+              : 'Add an assignment or project and SparkStart will sequence it into low-friction steps.'}
           </p>
+          {filter !== 'active' && (
+            <button
+              onClick={() => setFilter('active')}
+              className="mt-4 px-4 py-2 text-xs font-bold text-[var(--accent)] hover:underline cursor-pointer"
+            >
+              Back to Active Tasks
+            </button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3.5">
-          {filteredTasks.map((task) => (
-            <div
-              key={task.id}
-              className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl ss-card hover:border-[var(--border-accent)] hover:shadow-md transition-all"
-            >
-              <div className="flex items-start gap-4 flex-1">
-                {/* Complete checkbox button */}
-                <button
-                  onClick={() => onMarkDone(task.id)}
-                  className={`mt-1 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
-                    task.status === 'completed'
-                      ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
-                      : 'border-[var(--border)] hover:border-[var(--accent)] text-transparent hover:text-[var(--accent)]'
-                  }`}
-                  title={task.status === 'completed' ? 'Completed' : 'Mark completed'}
-                >
-                  <Check className="w-4 h-4" />
-                </button>
+        <div className="grid grid-cols-1 gap-4">
+          {filteredTasks.map((task) => {
+            const isCompleted = task.status === 'completed';
+            const subtasks = task.subtasks || [];
+            const totalSteps = task.totalStepsCount || (subtasks.length > 0 ? subtasks.length : 4);
+            const completedSteps = task.completedStepsCount || subtasks.filter((s) => s.status === 'completed').length;
+            const progressPercent = Math.min(100, Math.round((completedSteps / totalSteps) * 100));
+            const nextIncompleteStep = subtasks.find((s) => s.status !== 'completed');
+            const nextStepNum = completedSteps + 1;
+            const isExpanded = expandedTaskIds[task.id] ?? false;
 
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h4
-                      className={`text-base sm:text-lg font-bold ss-text-primary ${
-                        task.status === 'completed' ? 'line-through opacity-50' : ''
+            return (
+              <div
+                key={task.id}
+                className={`group flex flex-col p-5 sm:p-6 rounded-2xl ss-card hover:border-[var(--border-accent)] hover:shadow-md transition-all ${
+                  isCompleted ? 'opacity-85' : ''
+                }`}
+              >
+                {/* Main Task Header Row */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3.5 flex-1">
+                    {/* Complete Checkbox Button */}
+                    <button
+                      onClick={() => onMarkDone(task.id)}
+                      className={`mt-1 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+                        isCompleted
+                          ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+                          : 'border-[var(--border)] hover:border-[var(--accent)] text-transparent hover:text-[var(--accent)]'
                       }`}
+                      title={isCompleted ? 'Completed task' : 'Mark current step completed'}
                     >
-                      {task.title}
-                    </h4>
-                    {task.completedStepsCount > 0 && (
-                      <span className="ss-badge-accent text-xs font-semibold px-2.5 py-0.5">
-                        {task.completedStepsCount} {task.completedStepsCount === 1 ? 'step' : 'steps'} done
-                      </span>
-                    )}
+                      <Check className="w-4 h-4" />
+                    </button>
+
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4
+                          className={`text-base sm:text-lg font-bold ss-text-primary ${
+                            isCompleted ? 'line-through opacity-70' : ''
+                          }`}
+                        >
+                          {task.title}
+                        </h4>
+
+                        {isCompleted ? (
+                          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                            Completed Victory 🎉
+                          </span>
+                        ) : (
+                          <span className="ss-badge-accent text-xs font-semibold px-2.5 py-0.5">
+                            {completedSteps} of {totalSteps} steps ({progressPercent}%)
+                          </span>
+                        )}
+                      </div>
+
+                      {task.description && (
+                        <p className="ss-body-sm line-clamp-2">{task.description}</p>
+                      )}
+
+                      <div className="flex items-center gap-4 text-xs ss-text-muted pt-1">
+                        <span className="capitalize font-medium">Energy: {task.energy || 'flexible'}</span>
+                        {task.deadline && (
+                          <span className="flex items-center gap-1 font-medium">
+                            <Calendar className="w-3.5 h-3.5" />
+                            Target: {new Date(task.deadline).toLocaleDateString()}
+                          </span>
+                        )}
+                        {subtasks.length > 0 && (
+                          <button
+                            onClick={() => toggleExpand(task.id)}
+                            className="text-[var(--accent)] hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                          >
+                            <ListOrdered className="w-3.5 h-3.5" />
+                            <span>{subtasks.length} Micro-Steps</span>
+                            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  {task.description && (
-                    <p className="ss-body-sm mt-1 line-clamp-2">{task.description}</p>
-                  )}
-
-                  <div className="flex items-center gap-4 text-xs ss-text-muted mt-2">
-                    <span className="capitalize font-medium">Energy: {task.energy || 'flexible'}</span>
-                    {task.deadline && (
-                      <span className="flex items-center gap-1 font-medium">
-                        <Calendar className="w-3.5 h-3.5" />
-                        Target: {new Date(task.deadline).toLocaleDateString()}
-                      </span>
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-[var(--border)]">
+                    {!isCompleted ? (
+                      <button
+                        onClick={() => onSelectTask(task)}
+                        className="ss-btn-primary text-xs sm:text-sm py-2 px-4 cursor-pointer flex items-center gap-1.5 shadow-xs"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>
+                          {completedSteps === 0 ? 'Start Step 1' : `Continue to Step ${nextStepNum}`}
+                        </span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      onReopenTask && (
+                        <button
+                          onClick={() => onReopenTask(task.id)}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold ss-subtle border border-[var(--border)] ss-text-secondary hover:ss-text-primary transition-all cursor-pointer"
+                          title="Reopen task to continue adding steps"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Reopen Task</span>
+                        </button>
+                      )
                     )}
+
+                    <button
+                      onClick={() => setTaskToDelete(task.id)}
+                      className="p-2 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-500/10 transition-colors cursor-pointer"
+                      title="Delete task"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-[var(--border)]">
-                {task.status !== 'completed' && (
-                  <button
-                    onClick={() => onSelectTask(task)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[var(--accent-light)] text-[var(--accent)] hover:opacity-90 transition-all cursor-pointer"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    <span>Find Next Step</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+                {/* Progress Bar */}
+                <div className="mt-3.5 w-full h-1.5 rounded-full ss-subtle overflow-hidden">
+                  <div
+                    className="h-full bg-[var(--accent)] transition-all duration-300 rounded-full"
+                    style={{ width: `${Math.max(5, progressPercent)}%` }}
+                  />
+                </div>
+
+                {/* Expandable Child Micro-Steps Sequence */}
+                {isExpanded && subtasks.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-[var(--border)] space-y-2">
+                    <div className="text-xs font-bold uppercase tracking-wider ss-text-muted mb-2">
+                      Sequential Micro-Steps:
+                    </div>
+                    {subtasks.map((step, idx) => {
+                      const stepDone = step.status === 'completed';
+                      return (
+                        <div
+                          key={step.id || idx}
+                          className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs ${
+                            stepDone
+                              ? 'bg-emerald-500/5 border-emerald-500/20 ss-text-muted line-through'
+                              : 'ss-subtle border-[var(--border)] ss-text-primary'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span
+                              className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold ${
+                                stepDone ? 'bg-[var(--accent)] text-white' : 'border border-[var(--border)] ss-text-muted'
+                              }`}
+                            >
+                              {stepDone ? <Check className="w-3 h-3" /> : idx + 1}
+                            </span>
+                            <span className="font-semibold">{step.actionText}</span>
+                          </div>
+                          <span className="text-[10px] ss-text-muted font-medium shrink-0">
+                            ~{step.suggestedDurationMinutes}m
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
-
-                <button
-                  onClick={() => setTaskToDelete(task.id)}
-                  className="p-2.5 text-slate-400 hover:text-red-500 rounded-xl hover:bg-red-500/10 transition-colors cursor-pointer"
-                  title="Delete task"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Add Task Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-3xl ss-card p-6 sm:p-7 shadow-2xl">
-            <h3 className="text-xl font-extrabold ss-text-primary mb-1">Add a New Task</h3>
+          <div className="w-full max-w-lg rounded-3xl ss-card p-6 sm:p-7 shadow-2xl border border-[var(--border)]">
+            <h3 className="text-xl font-black ss-text-primary mb-1">Add a New Task</h3>
             <p className="ss-support mb-4">
-              Enter any project or goal you wish to make steady, low-pressure progress on.
+              Enter any project or goal. SparkStart will automatically decompose it into sequential 2-to-5 minute starter steps.
             </p>
 
             <form onSubmit={handleCreateSubmit} className="space-y-4">
@@ -257,7 +372,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                 <textarea
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
-                  placeholder="Any links, requirements, or initial thoughts..."
+                  placeholder="Any links, requirements, or thoughts..."
                   rows={3}
                   className="ss-input text-sm resize-none"
                 />
@@ -270,9 +385,9 @@ export const TaskList: React.FC<TaskListProps> = ({
                   onChange={(e) => setNewEnergy(e.target.value as EnergyLevel)}
                   className="ss-select w-full"
                 >
-                  <option value="low">Low Energy (2–3 min micro-step)</option>
-                  <option value="medium">Medium Energy (5–10 min blocks)</option>
-                  <option value="high">Higher Capacity (10–15 min focus)</option>
+                  <option value="low">Low Energy (1–3 min starter action)</option>
+                  <option value="medium">Medium Energy (5–8 min blocks)</option>
+                  <option value="high">Higher Capacity (10–12 min focus)</option>
                   <option value="unsure">Not sure / Flexible</option>
                 </select>
               </div>
@@ -281,16 +396,15 @@ export const TaskList: React.FC<TaskListProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="ss-btn-secondary text-sm py-2 px-4 cursor-pointer"
+                  className="ss-btn-ghost text-sm py-2 px-4 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={!newTitle.trim()}
-                  className="ss-btn-primary text-sm py-2 px-5 cursor-pointer"
+                  className="ss-btn-primary text-sm py-2.5 px-6 cursor-pointer"
                 >
-                  Save Task
+                  Save & Sequence
                 </button>
               </div>
             </form>
@@ -301,17 +415,17 @@ export const TaskList: React.FC<TaskListProps> = ({
       {/* Delete Confirmation Modal */}
       {taskToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-3xl ss-card p-6 shadow-2xl text-center">
-            <h4 className="text-lg font-bold ss-text-primary mb-2">Delete this task?</h4>
-            <p className="ss-support mb-5">
-              This will remove the task from your local list. This action cannot be undone.
+          <div className="w-full max-w-sm rounded-3xl ss-card p-6 shadow-2xl border border-[var(--border)] text-center space-y-4">
+            <h3 className="text-lg font-bold ss-text-primary">Delete this task?</h3>
+            <p className="ss-support text-xs">
+              This will remove the task and all its micro-steps. This action cannot be undone.
             </p>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-3 pt-2">
               <button
                 onClick={() => setTaskToDelete(null)}
-                className="ss-btn-secondary text-xs py-2 px-4 cursor-pointer"
+                className="ss-btn-ghost text-xs py-2 px-4 cursor-pointer"
               >
-                Keep Task
+                Cancel
               </button>
               <button
                 onClick={confirmDelete}
