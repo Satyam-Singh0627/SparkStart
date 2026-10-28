@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SparkStart Companion</title>
+  <style>
+    :root {
+      --bg: #fafaf8;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #16a34a;
+      --accent-light: #dcfce7;
+      --accent-hover: #15803d;
+      --amber-bg: #fef3c7;
+      --amber-text: #b45309;
+      --purple-bg: #f3e8ff;
+      --purple-text: #7e22ce;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 380px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px;
+      line-height: 1.5;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #22c55e, #15803d);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .brand-name {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand-name span { color: var(--accent); }
+    .status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid #bbf7d0;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      outline: none;
+      background: #f9fafb;
+    }
+    input[type="text"]:focus {
+      border-color: var(--accent);
+      background: #ffffff;
+    }
+    .btn-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      flex: 1;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid var(--border);
+    }
+    .btn-amber {
+      background: var(--amber-bg);
+      color: var(--amber-text);
+      border: 1px solid #fde68a;
+    }
+    .btn-purple {
+      background: var(--purple-bg);
+      color: var(--purple-text);
+      border: 1px solid #e9d5ff;
+    }
+    .micro-action {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.35;
+      margin-bottom: 6px;
+    }
+    .micro-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      padding-top: 6px;
+    }
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .footer a:hover { text-decoration: underline; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-logo">🌱</div>
+      <div>
+        <div class="brand-name">Spark<span>Start</span></div>
+      </div>
+    </div>
+    <div id="statusBadge" class="status-badge">100% Local</div>
+  </div>
+
+  <!-- Quick Starter View -->
+  <div id="starterView" class="card">
+    <div class="card-title">Find One Manageable Step</div>
+    <div class="input-group">
+      <input type="text" id="taskInput" placeholder="What are you working on today?">
+      <button id="findStepBtn" class="btn btn-primary">Find My Next Step ✨</button>
+    </div>
+  </div>
+
+  <!-- Active Step View -->
+  <div id="stepView" class="card hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <div class="card-title" style="margin-bottom:0;">Next Immediate Action</div>
+      <span id="stepDuration" style="font-size:10px; font-weight:700; background:var(--accent-light); color:var(--accent); padding:2px 6px; border-radius:6px;">~2m</span>
+    </div>
+    <div id="stepAction" class="micro-action">Open file and read the first requirement.</div>
+    <div id="stepWhy" class="micro-desc">Zero pressure to finish it all. Arriving at the material breaks initial friction.</div>
+    
+    <div class="btn-row">
+      <button id="doneBtn" class="btn btn-primary">Done! ✨</button>
+      <button id="tooBigBtn" class="btn btn-amber">Too Big</button>
+      <button id="restBtn" class="btn btn-purple">Rest</button>
+      <button id="dismissBtn" class="btn btn-secondary">✕</button>
+    </div>
+  </div>
+
+  <!-- Rest View -->
+  <div id="restView" class="card hidden" style="text-align:center; padding:20px;">
+    <div style="font-size:28px; margin-bottom:8px;">☕</div>
+    <div style="font-size:14px; font-weight:800; margin-bottom:4px;">Guilt-Free Rest Break</div>
+    <p style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">Close your eyes, stretch your neck, and take three deep breaths. No streak penalties.</p>
+    <button id="endRestBtn" class="btn btn-primary" style="margin:0 auto;">Ready to Return</button>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>Private Local SQLite</span>
+    <a href="http://localhost:5174" target="_blank" id="openWebLink">Open Web Dashboard &rarr;</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+

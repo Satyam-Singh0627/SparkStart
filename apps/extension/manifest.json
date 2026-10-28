@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "SparkStart: Low-Pressure Task Companion",
+  "version": "1.0.0",
+  "description": "Small steps. Real progress. Adaptive task sequencer for executive dysfunction, overwhelm, and ADHD.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "SparkStart — Find Your Next Step"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8000/*",
+    "http://localhost:8000/*"
+  ]
+}
+
