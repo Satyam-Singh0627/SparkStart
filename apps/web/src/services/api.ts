@@ -82,9 +82,10 @@ export async function createTask(title: string, energy: string = 'unsure', descr
   return newTask;
 }
 
-export async function markTaskStepDone(taskId: string): Promise<Task> {
+export async function markTaskStepDone(taskId: string, stepId?: string): Promise<Task> {
   try {
-    const res = await safeFetch(`/tasks/${taskId}/step-done`, { method: 'POST' });
+    const url = stepId ? `/tasks/${taskId}/steps/${stepId}/done` : `/tasks/${taskId}/step-done`;
+    const res = await safeFetch(url, { method: 'POST' });
     if (res.ok) {
       return await res.json();
     }
@@ -94,8 +95,41 @@ export async function markTaskStepDone(taskId: string): Promise<Task> {
   const tasks = await fetchTasks();
   const t = tasks.find((item) => item.id === taskId);
   if (t) {
-    t.completedStepsCount += 1;
+    t.completedStepsCount = (t.completedStepsCount || 0) + 1;
+    if (t.subtasks && stepId) {
+      const sub = t.subtasks.find((s) => s.id === stepId);
+      if (sub) sub.status = 'completed';
+    } else if (t.subtasks) {
+      const sub = t.subtasks.find((s) => s.status !== 'completed');
+      if (sub) sub.status = 'completed';
+    }
+    const allDone = t.subtasks && t.subtasks.length > 0 && t.subtasks.every((s) => s.status === 'completed');
+    t.status = allDone ? 'completed' : 'in_progress';
+    t.updatedAt = new Date().toISOString();
+    localStorage.setItem('sparkstart_tasks_cache', JSON.stringify(tasks));
+    return t;
+  }
+  throw new Error('Task not found');
+}
+
+export async function reopenTask(taskId: string): Promise<Task> {
+  try {
+    const res = await safeFetch(`/tasks/${taskId}/reopen`, { method: 'POST' });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch {
+    // fallback
+  }
+  const tasks = await fetchTasks();
+  const t = tasks.find((item) => item.id === taskId);
+  if (t) {
     t.status = 'in_progress';
+    if (t.subtasks && t.subtasks.length > 0) {
+      const last = t.subtasks[t.subtasks.length - 1];
+      if (last) last.status = 'suggested';
+    }
+    t.completedStepsCount = Math.max(0, (t.completedStepsCount || 1) - 1);
     t.updatedAt = new Date().toISOString();
     localStorage.setItem('sparkstart_tasks_cache', JSON.stringify(tasks));
     return t;
