@@ -48,7 +48,7 @@ export interface KnowledgeSourceRef {
   excerpt?: string;
 }
 
-export type MicroTaskStatus = 'suggested' | 'accepted' | 'completed' | 'shrunk' | 'dismissed';
+export type MicroTaskStatus = 'suggested' | 'accepted' | 'completed' | 'shrunk' | 'dismissed' | 'pending';
 
 export interface MicroTask {
   id: string;
@@ -56,6 +56,7 @@ export interface MicroTask {
   actionText: string;
   suggestedDurationMinutes: number;
   status: MicroTaskStatus;
+  stepOrder?: number;
   encouragement: string;
   whyItIsManageable: string;
   alternativeSmallerStep?: string;
@@ -72,6 +73,8 @@ export interface Task {
   status: TaskStatus;
   deadline?: string;
   completedStepsCount: number;
+  totalStepsCount?: number;
+  subtasks?: MicroTask[];
   createdAt: string;
   updatedAt: string;
   currentMicroTask?: MicroTask | null;
@@ -90,6 +93,9 @@ export interface SequenceRequest {
 
 export interface SequenceResponse {
   taskId?: string;
+  stepId?: string;
+  stepOrder?: number;
+  totalSteps?: number;
   actionText: string;
   suggestedDurationMinutes: number;
   encouragement: string;
@@ -100,7 +106,87 @@ export interface SequenceResponse {
   timestamp: string;
 }
 
-export type AppTheme = 'light' | 'dark' | 'forest' | 'lavender' | 'warm' | 'high-contrast';
+export type AppTheme =
+  | 'paper-sage'
+  | 'midnight-pulse'
+  | 'forest-canopy'
+  | 'lavender-haze'
+  | 'sunlit-terracotta'
+  | 'ink-lime'
+  // Legacy aliases for backward-compatibility with previously stored preferences:
+  | 'light'
+  | 'dark'
+  | 'forest'
+  | 'lavender'
+  | 'warm'
+  | 'high-contrast';
+
+export interface ThemeOption {
+  id: AppTheme;
+  name: string;
+  description: string;
+  previewAccent: string;
+  previewBg: string;
+  previewCard: string;
+  previewText: string;
+}
+
+export const THEME_OPTIONS: ThemeOption[] = [
+  {
+    id: 'paper-sage',
+    name: 'Paper & Sage',
+    description: 'Warm off-white surfaces with natural sage green accents.',
+    previewAccent: '#2e7d5a',
+    previewBg: '#fafaf7',
+    previewCard: '#ffffff',
+    previewText: '#181e1b',
+  },
+  {
+    id: 'midnight-pulse',
+    name: 'Midnight Pulse',
+    description: 'Deep navy/charcoal backgrounds with cool electric sky accents.',
+    previewAccent: '#38bdf8',
+    previewBg: '#0b1120',
+    previewCard: '#151e32',
+    previewText: '#f1f5f9',
+  },
+  {
+    id: 'forest-canopy',
+    name: 'Forest Canopy',
+    description: 'Rich dark forest-green surfaces with warm cream & moss highlights.',
+    previewAccent: '#22c55e',
+    previewBg: '#0d1f14',
+    previewCard: '#132c1c',
+    previewText: '#ecfdf5',
+  },
+  {
+    id: 'lavender-haze',
+    name: 'Lavender Haze',
+    description: 'Soft lavender mist surfaces with soothing violet & plum tones.',
+    previewAccent: '#8b5cf6',
+    previewBg: '#f8f5fd',
+    previewCard: '#ffffff',
+    previewText: '#2e1065',
+  },
+  {
+    id: 'sunlit-terracotta',
+    name: 'Sunlit Terracotta',
+    description: 'Warm cream backgrounds with grounding terracotta and amber accents.',
+    previewAccent: '#ea580c',
+    previewBg: '#fdf8f3',
+    previewCard: '#fffaf5',
+    previewText: '#431407',
+  },
+  {
+    id: 'ink-lime',
+    name: 'Ink & Lime',
+    description: 'High-contrast stark near-black & white surfaces with vivid lime focus.',
+    previewAccent: '#84cc16',
+    previewBg: '#09090b',
+    previewCard: '#18181b',
+    previewText: '#fafafa',
+  },
+];
 
 export type CompanionCharacter = 'sprout' | 'panda' | 'fox' | 'cat' | 'cloud' | 'robot';
 
