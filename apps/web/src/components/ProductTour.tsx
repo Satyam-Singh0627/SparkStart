@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { ChevronRight, ChevronLeft, X, Sparkles, Check } from 'lucide-react';
 
 export interface TourStep {
   targetId: string;
   title: string;
   content: string;
-  position?: 'top' | 'bottom' | 'left' | 'right';
+  preferredPosition?: 'top' | 'bottom';
 }
 
 const TOUR_STEPS: TourStep[] = [
@@ -13,43 +13,43 @@ const TOUR_STEPS: TourStep[] = [
     targetId: 'tour-energy',
     title: '1. Capacity Check-In',
     content:
-      'Start by telling us how you feel right now. Low energy? We will generate an ultra-gentle 2-minute starter action. Feeling ready? We will set up a 10–15 minute focus block.',
-    position: 'bottom',
+      'Check in with how you feel right now. Low energy gives you a 1–3 min starter action; higher energy opens up a 10–12 min focus block. No pressure or judgment.',
+    preferredPosition: 'bottom',
   },
   {
     targetId: 'tour-taskstarter',
     title: '2. Low-Friction Task Starter',
     content:
-      'Enter any project, essay, or coding assignment that feels heavy. No need to structure it yet—just type what is on your mind.',
-    position: 'bottom',
+      'Type any goal or assignment that feels heavy. SparkStart automatically decomposes it into 3 to 4 sequential, non-threatening micro-steps.',
+    preferredPosition: 'bottom',
   },
   {
     targetId: 'tour-microtask',
-    title: '3. Single-Target Next Action',
+    title: '3. Immediate Next Action',
     content:
-      'Instead of an overwhelming to-do list, SparkStart gives you exactly ONE actionable next step, complete with an explanation of why it is psychologically manageable.',
-    position: 'top',
+      'Instead of a 20-item checklist inducing freeze, you see ONE clear next action with estimated duration and psychological reasons why it is manageable.',
+    preferredPosition: 'top',
+  },
+  {
+    targetId: 'tour-controls',
+    title: '4. Adaptive Pacing Controls',
+    content:
+      'Step too big? Click "Too Big" to shrink it to 60 seconds. Need a pause? Choose "Guilt-Free Rest". Zero guilt, zero penalties, no broken streaks.',
+    preferredPosition: 'bottom',
   },
   {
     targetId: 'tour-tasks',
-    title: '4. My Tasks & Step Progression',
+    title: '5. My Tasks & Step Progression',
     content:
-      'Manage your assignments without arbitrary deadlines or guilt. View your past micro-steps and choose which goal you want to make steady progress on.',
-    position: 'bottom',
-  },
-  {
-    targetId: 'tour-insights',
-    title: '5. Momentum & Resting Insights',
-    content:
-      'Review your progress, completed micro-actions, and rest sessions. There are no punitive broken streaks here—only celebrated steps.',
-    position: 'bottom',
+      'Track all your goals, sequential micro-steps, and completed victories. Click "Continue" to jump straight into the next step anytime.',
+    preferredPosition: 'bottom',
   },
   {
     targetId: 'tour-settings',
-    title: '6. Personalize Your Companion & Theme',
+    title: '6. Themes & Companion Personalization',
     content:
-      'Switch between 6 accessible design themes (Light, Dark, Forest, Lavender, Warm, High Contrast) and choose your favorite SparkBuddy companion character.',
-    position: 'bottom',
+      'Personalize your companion (Sprout, Panda, Fox, Cat, Cloud, Robot) and switch across 6 distinct accessible themes (Paper & Sage, Midnight Pulse, Forest Canopy, Lavender Haze, Sunlit Terracotta, Ink & Lime).',
+    preferredPosition: 'bottom',
   },
 ];
 
@@ -65,21 +65,18 @@ export const ProductTour: React.FC<ProductTourProps> = ({ isOpen, onClose, onNav
 
   const step = TOUR_STEPS[currentStepIndex];
 
-  // Sync tab navigation if step belongs to another tab
+  // Navigate to appropriate tab when step requires it
   useEffect(() => {
     if (!isOpen) return;
 
     if (step.targetId === 'tour-tasks' && onNavigateTab) {
       onNavigateTab('tasks');
-    } else if (step.targetId === 'tour-insights' && onNavigateTab) {
-      onNavigateTab('insights');
     } else if (step.targetId === 'tour-settings' && onNavigateTab) {
       onNavigateTab('settings');
     } else if (onNavigateTab) {
       onNavigateTab('dashboard');
     }
 
-    // Small delay to allow tab render before querying DOM
     const timer = setTimeout(() => {
       const el = document.getElementById(step.targetId);
       if (el) {
@@ -88,23 +85,25 @@ export const ProductTour: React.FC<ProductTourProps> = ({ isOpen, onClose, onNav
       } else {
         setTargetRect(null);
       }
-    }, 200);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [currentStepIndex, isOpen, step, onNavigateTab]);
 
-  // Window resize handler
+  // Recalculate on window resize & scroll
   useEffect(() => {
     if (!isOpen) return;
-    const handleResize = () => {
+    const updatePosition = () => {
       const el = document.getElementById(step.targetId);
-      if (el) setTargetRect(el.getBoundingClientRect());
+      if (el) {
+        setTargetRect(el.getBoundingClientRect());
+      }
     };
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleResize);
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition);
     return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleResize);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition);
     };
   }, [isOpen, step]);
 
@@ -123,6 +122,47 @@ export const ProductTour: React.FC<ProductTourProps> = ({ isOpen, onClose, onNav
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, currentStepIndex]);
+
+  // Calculate dynamic card positioning anchored near targetRect
+  const tooltipStyle = useMemo<React.CSSProperties>(() => {
+    if (!targetRect || typeof window === 'undefined') {
+      return {
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+      };
+    }
+
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+    const cardW = Math.min(480, viewportW - 32);
+
+    // Compute horizontal center aligned with element, clamped to viewport
+    let leftPos = targetRect.left + targetRect.width / 2 - cardW / 2;
+    leftPos = Math.max(16, Math.min(leftPos, viewportW - cardW - 16));
+
+    // Place below element if space allows, otherwise place above
+    const spaceBelow = viewportH - targetRect.bottom;
+    const spaceAbove = targetRect.top;
+
+    if (spaceBelow > 260 || spaceBelow > spaceAbove) {
+      const topPos = Math.min(targetRect.bottom + 16, viewportH - 280);
+      return {
+        position: 'fixed',
+        top: `${Math.max(16, topPos)}px`,
+        left: `${leftPos}px`,
+        width: `${cardW}px`,
+      };
+    } else {
+      const bottomPos = Math.min(viewportH - targetRect.top + 16, viewportH - 280);
+      return {
+        position: 'fixed',
+        bottom: `${Math.max(16, bottomPos)}px`,
+        left: `${leftPos}px`,
+        width: `${cardW}px`,
+      };
+    }
+  }, [targetRect]);
 
   if (!isOpen) return null;
 
@@ -165,12 +205,12 @@ export const ProductTour: React.FC<ProductTourProps> = ({ isOpen, onClose, onNav
             width: targetRect.width + 16,
             height: targetRect.height + 16,
           }}
-          className="fixed rounded-2xl ring-4 ring-emerald-400 ring-offset-4 ring-offset-black/50 pointer-events-none transition-all duration-300 z-50 animate-pulse"
+          className="fixed rounded-2xl ring-4 ring-[var(--accent)] ring-offset-4 ring-offset-black/50 pointer-events-none transition-all duration-300 z-50 animate-pulse shadow-2xl"
         />
       )}
 
-      {/* Tour Tooltip Card */}
-      <div className="fixed inset-x-4 bottom-6 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 max-w-lg mx-auto z-50">
+      {/* Tour Tooltip Card anchored near target */}
+      <div style={tooltipStyle} className="fixed z-50 transition-all duration-300">
         <div className="ss-card p-6 sm:p-7 rounded-3xl shadow-2xl border-2 border-[var(--border-accent)] bg-[var(--bg-card)]">
           {/* Header */}
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--border)]">
@@ -178,14 +218,14 @@ export const ProductTour: React.FC<ProductTourProps> = ({ isOpen, onClose, onNav
               <span className="w-6 h-6 rounded-lg bg-[var(--accent)] text-white flex items-center justify-center text-xs font-bold">
                 <Sparkles className="w-3.5 h-3.5" />
               </span>
-              <span className="text-xs font-bold uppercase tracking-wider ss-text-muted">
+              <span className="text-xs font-extrabold uppercase tracking-wider ss-text-muted">
                 Step {currentStepIndex + 1} of {TOUR_STEPS.length}
               </span>
             </div>
 
             <button
               onClick={handleSkip}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+              className="p-1 rounded-lg ss-text-muted hover:ss-text-primary hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
               title="Close Tour"
             >
               <X className="w-5 h-5" />
@@ -240,4 +280,3 @@ export const ProductTour: React.FC<ProductTourProps> = ({ isOpen, onClose, onNav
     </div>
   );
 };
-
