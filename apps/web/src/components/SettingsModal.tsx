@@ -17,6 +17,7 @@ import {
   AppTheme,
   CompanionCharacter,
   CHARACTER_OPTIONS,
+  THEME_OPTIONS,
 } from '@sparkstart/shared';
 import { exportAllData, purgeAllData } from '../services/api';
 import { CharacterIllustration } from './CharacterIllustration';
@@ -28,15 +29,6 @@ interface SettingsModalProps {
   onThemeChange: (theme: AppTheme) => void;
   onCharacterChange: (character: CompanionCharacter) => void;
 }
-
-const THEME_OPTIONS: { id: AppTheme; label: string; desc: string; bg: string; accent: string }[] = [
-  { id: 'light', label: 'Light', desc: 'Clean, bright, professional workspace', bg: '#fafaf8', accent: '#16a34a' },
-  { id: 'dark', label: 'Dark', desc: 'Comfortable low-light interface', bg: '#0f1117', accent: '#4ade80' },
-  { id: 'forest', label: 'Forest', desc: 'Nature-inspired deep greens', bg: '#f0f7f0', accent: '#166534' },
-  { id: 'lavender', label: 'Lavender', desc: 'Calm purple & neutral tones', bg: '#faf5ff', accent: '#7c3aed' },
-  { id: 'warm', label: 'Warm', desc: 'Warm cream & earth tones', bg: '#fdf8f0', accent: '#c2410c' },
-  { id: 'high-contrast', label: 'High Contrast', desc: 'Maximum legibility & strong borders', bg: '#ffffff', accent: '#006400' },
-];
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   preferences,
@@ -113,7 +105,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           Select from six carefully crafted visual environments.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 pt-1">
           {THEME_OPTIONS.map((t) => {
             const isSelected = prefs.theme === t.id;
             return (
@@ -128,13 +120,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between w-full mb-2">
-                  <span className="text-base font-bold ss-text-primary">{t.label}</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-full border border-black/10" style={{ backgroundColor: t.bg }} />
-                    <span className="w-4 h-4 rounded-full" style={{ backgroundColor: t.accent }} />
+                  <span className="text-sm font-bold ss-text-primary flex items-center gap-1.5">
+                    {t.name}
+                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-[var(--accent)]" />}
+                  </span>
+                  <div className="flex items-center gap-1 p-1 rounded-md border border-[var(--border)]" style={{ backgroundColor: t.previewBg }}>
+                    <span className="w-3.5 h-3.5 rounded border border-black/10" style={{ backgroundColor: t.previewCard }} title="Card Background" />
+                    <span className="w-3.5 h-3.5 rounded" style={{ backgroundColor: t.previewText }} title="Text Color" />
+                    <span className="w-3.5 h-3.5 rounded" style={{ backgroundColor: t.previewAccent }} title="Accent Color" />
                   </div>
                 </div>
-                <p className="text-xs ss-text-secondary leading-snug">{t.desc}</p>
+                <p className="text-xs ss-text-secondary leading-snug">{t.description}</p>
               </button>
             );
           })}

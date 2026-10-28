@@ -45,15 +45,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white shadow-sm ring-2 ring-emerald-300/40">
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-sm ring-2 ring-[var(--focus-ring)]"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
               <Sprout className="w-6 h-6 ss-animate-float" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xl sm:text-2xl font-extrabold tracking-tight ss-text-primary">
-                  Spark<span className="text-emerald-600 dark:text-emerald-400">Start</span>
+                  Spark<span style={{ color: 'var(--accent)' }}>Start</span>
                 </span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full ss-badge-accent">
                   MVP Live
                 </span>
               </div>
@@ -111,7 +114,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black ss-text-primary tracking-tight leading-[1.12]">
               Small steps. <br />
-              <span className="text-emerald-600 dark:text-emerald-400">Real progress.</span>
+              <span style={{ color: 'var(--accent)' }}>Real progress.</span>
             </h1>
 
             <p className="ss-body text-base sm:text-xl max-w-2xl mx-auto lg:mx-0 leading-relaxed">

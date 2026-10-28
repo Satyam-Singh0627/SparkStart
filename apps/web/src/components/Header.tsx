@@ -11,7 +11,7 @@ import {
   Compass,
   Home,
 } from 'lucide-react';
-import { AppTheme, CompanionCharacter, CHARACTER_OPTIONS } from '@sparkstart/shared';
+import { AppTheme, CompanionCharacter, CHARACTER_OPTIONS, THEME_OPTIONS } from '@sparkstart/shared';
 
 interface HeaderProps {
   activeTab: 'dashboard' | 'tasks' | 'insights' | 'settings';
@@ -24,15 +24,6 @@ interface HeaderProps {
   onOpenTour?: () => void;
   onSwitchToLanding?: () => void;
 }
-
-const THEME_OPTIONS: { id: AppTheme; label: string; previewColor: string; bgPreview: string }[] = [
-  { id: 'light', label: 'Light', previewColor: '#16a34a', bgPreview: '#fafaf8' },
-  { id: 'dark', label: 'Dark', previewColor: '#4ade80', bgPreview: '#0f1117' },
-  { id: 'forest', label: 'Forest', previewColor: '#166534', bgPreview: '#f0f7f0' },
-  { id: 'lavender', label: 'Lavender', previewColor: '#7c3aed', bgPreview: '#faf5ff' },
-  { id: 'warm', label: 'Warm', previewColor: '#c2410c', bgPreview: '#fdf8f0' },
-  { id: 'high-contrast', label: 'High Contrast', previewColor: '#006400', bgPreview: '#ffffff' },
-];
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
@@ -56,13 +47,16 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => setActiveTab('dashboard')}
             className="flex items-center gap-3 cursor-pointer select-none group"
           >
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white shadow-sm ring-2 ring-emerald-300/40 group-hover:scale-105 transition-transform">
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-sm ring-2 ring-[var(--focus-ring)] group-hover:scale-105 transition-transform"
+              style={{ backgroundColor: 'var(--accent)' }}
+            >
               <Sprout className="w-6 h-6 ss-animate-float" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight ss-text-primary">
-                  Spark<span className="text-emerald-600 dark:text-emerald-400">Start</span>
+                  Spark<span style={{ color: 'var(--accent)' }}>Start</span>
                 </h1>
                 <span className="ss-badge-accent hidden sm:inline-flex items-center gap-1">
                   <span>{activeChar.emoji}</span>
@@ -94,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               {THEME_OPTIONS.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.label}
+                  {t.name}
                 </option>
               ))}
             </select>
@@ -193,7 +187,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               {THEME_OPTIONS.map((t) => (
                 <option key={t.id} value={t.id} className="bg-[var(--bg-card)] ss-text-primary">
-                  {t.label}
+                  {t.name}
                 </option>
               ))}
             </select>
