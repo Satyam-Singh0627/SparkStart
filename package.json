@@ -1,0 +1,25 @@
+{
+  "name": "sparkstart-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SparkStart: Adaptive, Low-Pressure Productivity Tool & SparkBuddy Desktop Companion",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=@sparkstart/web",
+    "dev:desktop": "npm run dev:run --workspace=@sparkstart/desktop",
+    "dev:api": "powershell -Command \".\\.venv\\Scripts\\python.exe -m uvicorn services.api.main:app --reload --port 8000\"",
+    "build:web": "npm run build --workspace=@sparkstart/web",
+    "build:desktop": "npm run build --workspace=@sparkstart/desktop",
+    "build:extension": "npm run build --workspace=@sparkstart/extension",
+    "build": "npm run build:web && npm run build:desktop && npm run build:extension",
+    "test:api": "powershell -Command \".\\.venv\\Scripts\\python.exe -m pytest tests/ -v\"",
+    "test": "npm run test:api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
+
