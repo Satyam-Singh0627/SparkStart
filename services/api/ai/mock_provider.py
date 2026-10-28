@@ -174,3 +174,205 @@ class MockAIProvider(BaseAIProvider):
             return "You have good momentum today. Let's direct it into one smooth, clear win."
         return "Small steps. Take your time, there is zero rush or judgment."
 
+    async def generate_task_plan(
+        self,
+        task_title: str,
+        energy_level: str,
+        retrieved_context: str = "",
+    ) -> list[Dict[str, Any]]:
+        """
+        Decomposes a task into 3-4 sequential, concrete, low-friction micro-steps.
+        Each step has stepOrder, actionText, suggestedDurationMinutes, encouragement,
+        whyItIsManageable, and alternativeSmallerStep.
+        """
+        t_lower = task_title.lower()
+        energy = (energy_level or "unsure").lower()
+
+        is_coding = any(k in t_lower for k in ["code", "react", "python", "bug", "build", "frontend", "api", "git", "project", "program", "app", "sql"])
+        is_academic = any(k in t_lower for k in ["dbms", "study", "assignment", "exam", "reading", "math", "chapter", "lecture", "homework", "control systems", "quiz"])
+        is_writing = any(k in t_lower for k in ["write", "essay", "report", "paper", "documentation", "doc", "draft", "proposal"])
+        is_career = any(k in t_lower for k in ["internship", "resume", "apply", "job", "portfolio", "cover letter", "linkedin"])
+
+        if is_coding:
+            steps = [
+                {
+                    "stepOrder": 1,
+                    "actionText": f"Open your code editor and navigate to '{task_title}'. Just view the project tree.",
+                    "suggestedDurationMinutes": 2,
+                    "encouragement": "Zero coding required yet. Just arriving at the project lowers activation energy.",
+                    "whyItIsManageable": "Visual familiarization overcomes task avoidance without requiring working memory.",
+                    "alternativeSmallerStep": "Just launch VS Code or your terminal window.",
+                },
+                {
+                    "stepOrder": 2,
+                    "actionText": f"Add a single comment or TODO note in the target file outlining the first small change.",
+                    "suggestedDurationMinutes": 3,
+                    "encouragement": "Drafting a quick comment establishes your anchor point.",
+                    "whyItIsManageable": "Comments require zero syntax debugging and structure your thinking.",
+                    "alternativeSmallerStep": "Read the last 10 lines of code you worked on.",
+                },
+                {
+                    "stepOrder": 3,
+                    "actionText": f"Write or adjust the first isolated function or component for '{task_title}'.",
+                    "suggestedDurationMinutes": 5,
+                    "encouragement": "Focus only on this single isolated block. Ignore the rest of the application.",
+                    "whyItIsManageable": "Single-target focus prevents cognitive overload.",
+                    "alternativeSmallerStep": "Write just the type signature or parameter list.",
+                },
+                {
+                    "stepOrder": 4,
+                    "actionText": "Run the project or linter once to verify your small addition compiles cleanly.",
+                    "suggestedDurationMinutes": 3,
+                    "encouragement": "A green terminal output or error trace gives a clear, bounded checkpoint.",
+                    "whyItIsManageable": "Verifying now locks in your win and prevents debugging debt.",
+                    "alternativeSmallerStep": "Save the file and commit your progress.",
+                },
+            ]
+        elif is_academic:
+            steps = [
+                {
+                    "stepOrder": 1,
+                    "actionText": f"Open the assignment prompt, textbook, or syllabus for '{task_title}'. Read question 1 only.",
+                    "suggestedDurationMinutes": 2,
+                    "encouragement": "You do not have to finish the assignment today. Just read one prompt.",
+                    "whyItIsManageable": "Reading one sentence takes 30 seconds and eliminates anticipation dread.",
+                    "alternativeSmallerStep": "Locate the file or book on your desk or screen.",
+                },
+                {
+                    "stepOrder": 2,
+                    "actionText": f"Jot down 2 bullet points or formulas needed to solve the first question.",
+                    "suggestedDurationMinutes": 3,
+                    "encouragement": "Bullet points offload working memory onto paper so you feel lighter.",
+                    "whyItIsManageable": "Notes don't have to be neat; they just capture initial thoughts.",
+                    "alternativeSmallerStep": "Highlight the key terms in the question.",
+                },
+                {
+                    "stepOrder": 3,
+                    "actionText": f"Draft the solution to question 1 or summarize the core theorem for '{task_title}'.",
+                    "suggestedDurationMinutes": 5,
+                    "encouragement": "One completed question gives you genuine momentum.",
+                    "whyItIsManageable": "Working on a bounded problem creates immediate self-efficacy.",
+                    "alternativeSmallerStep": "Write down just the first formula and known variables.",
+                },
+                {
+                    "stepOrder": 4,
+                    "actionText": "Quickly check your draft against your class notes and save your document.",
+                    "suggestedDurationMinutes": 3,
+                    "encouragement": "You did it! Lock in this step and celebrate a real win.",
+                    "whyItIsManageable": "Checking now ensures you won't have to restart from scratch next time.",
+                    "alternativeSmallerStep": "Save the document with a clear filename.",
+                },
+            ]
+        elif is_writing:
+            steps = [
+                {
+                    "stepOrder": 1,
+                    "actionText": f"Open a blank document, give it the title '{task_title}', and write one sentence.",
+                    "suggestedDurationMinutes": 2,
+                    "encouragement": "A single sentence breaks the blank page barrier effortlessly.",
+                    "whyItIsManageable": "One sentence is non-threatening and establishes immediate progress.",
+                    "alternativeSmallerStep": "Create the file and write just the title.",
+                },
+                {
+                    "stepOrder": 2,
+                    "actionText": "Draft 3 quick bullet points of the main ideas you want to communicate.",
+                    "suggestedDurationMinutes": 4,
+                    "encouragement": "Don't edit or judge your ideas yet. Just let them flow out.",
+                    "whyItIsManageable": "Bullet points bypass writer's block and perfectionism.",
+                    "alternativeSmallerStep": "Write one single question your document will answer.",
+                },
+                {
+                    "stepOrder": 3,
+                    "actionText": "Turn the first bullet point into a short, 3-to-4 sentence paragraph.",
+                    "suggestedDurationMinutes": 5,
+                    "encouragement": "You are fleshing out one small idea at a time.",
+                    "whyItIsManageable": "One paragraph is bounded and tangible.",
+                    "alternativeSmallerStep": "Expand the bullet point by adding 2 detail words.",
+                },
+                {
+                    "stepOrder": 4,
+                    "actionText": "Read through your paragraph once, fix any obvious typo, and save.",
+                    "suggestedDurationMinutes": 2,
+                    "encouragement": "Reviewing locks in the feeling of accomplishment.",
+                    "whyItIsManageable": "A quick pass provides closure without exhausting energy.",
+                    "alternativeSmallerStep": "Just save the document.",
+                },
+            ]
+        elif is_career:
+            steps = [
+                {
+                    "stepOrder": 1,
+                    "actionText": f"Open your resume or the job listing tab for '{task_title}'. Just read the role title.",
+                    "suggestedDurationMinutes": 2,
+                    "encouragement": "Zero pressure to apply right now. Just review the posting.",
+                    "whyItIsManageable": "Looking at the tab takes 60 seconds and builds familiarity.",
+                    "alternativeSmallerStep": "Bookmark the posting link in your browser.",
+                },
+                {
+                    "stepOrder": 2,
+                    "actionText": "Review the required skills and note down 2 things you already know well.",
+                    "suggestedDurationMinutes": 3,
+                    "encouragement": "Validating your qualifications boosts your confidence.",
+                    "whyItIsManageable": "Focusing on what you already possess prevents imposter syndrome.",
+                    "alternativeSmallerStep": "Highlight one line in the job description.",
+                },
+                {
+                    "stepOrder": 3,
+                    "actionText": f"Tailor 1 bullet point on your resume or draft a 3-sentence introduction for '{task_title}'.",
+                    "suggestedDurationMinutes": 5,
+                    "encouragement": "One targeted paragraph is all you need for real progress.",
+                    "whyItIsManageable": "Small edits feel achievable and rewarding.",
+                    "alternativeSmallerStep": "Check that your phone and email on your resume are correct.",
+                },
+                {
+                    "stepOrder": 4,
+                    "actionText": "Save your updated resume as a PDF draft ready for submission.",
+                    "suggestedDurationMinutes": 2,
+                    "encouragement": "You have a ready-to-go asset. That is a major milestone!",
+                    "whyItIsManageable": "Exporting locks in your effort and leaves you prepared.",
+                    "alternativeSmallerStep": "Save the editable draft document.",
+                },
+            ]
+        else:
+            steps = [
+                {
+                    "stepOrder": 1,
+                    "actionText": f"Prepare the space: open the document, website, or workspace for '{task_title}'.",
+                    "suggestedDurationMinutes": 2,
+                    "encouragement": "Just getting into position is half the victory.",
+                    "whyItIsManageable": "No deep thinking required; simply open the workspace.",
+                    "alternativeSmallerStep": "Clear a small space on your desk or browser bar.",
+                },
+                {
+                    "stepOrder": 2,
+                    "actionText": f"Identify and write down the single easiest first component of '{task_title}'.",
+                    "suggestedDurationMinutes": 3,
+                    "encouragement": "Pinpointing one small target eliminates decision paralysis.",
+                    "whyItIsManageable": "Naming the first step reduces extraneous cognitive load.",
+                    "alternativeSmallerStep": "Pick the part that feels least stressful.",
+                },
+                {
+                    "stepOrder": 3,
+                    "actionText": f"Spend 5 focused minutes on that easiest component of '{task_title}'.",
+                    "suggestedDurationMinutes": 5,
+                    "encouragement": "Give yourself permission to stop as soon as 5 minutes are up.",
+                    "whyItIsManageable": "Time-boxing makes the task finite and non-threatening.",
+                    "alternativeSmallerStep": "Work for just 2 minutes on it.",
+                },
+                {
+                    "stepOrder": 4,
+                    "actionText": "Check off what you did, write a 1-line note of what comes next, and save.",
+                    "suggestedDurationMinutes": 2,
+                    "encouragement": "Leaving a breadcrumb note makes restarting later completely effortless.",
+                    "whyItIsManageable": "Capturing context prevents losing your train of thought.",
+                    "alternativeSmallerStep": "Just save your current work.",
+                },
+            ]
+
+        # Calibrate durations if low energy
+        if energy == "low":
+            for s in steps:
+                s["suggestedDurationMinutes"] = max(1, min(3, s["suggestedDurationMinutes"]))
+
+        return steps
+

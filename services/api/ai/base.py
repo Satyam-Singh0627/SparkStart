@@ -36,3 +36,25 @@ class BaseAIProvider(ABC):
         """
         pass
 
+    @abstractmethod
+    async def generate_task_plan(
+        self,
+        task_title: str,
+        energy_level: str,
+        retrieved_context: str = "",
+    ) -> List[Dict[str, Any]]:
+        """
+        Generate an ordered list of 3 to 4 sequential micro-steps decomposing the task:
+        [
+            {
+                "stepOrder": int,
+                "actionText": str,
+                "suggestedDurationMinutes": int,
+                "encouragement": str,
+                "whyItIsManageable": str,
+                "alternativeSmallerStep": str
+            }, ...
+        ]
+        """
+        pass
+

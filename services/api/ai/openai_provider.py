@@ -77,3 +77,11 @@ Respond in strict JSON with keys: actionText, suggestedDurationMinutes (int), en
             task_title, energy_level, obstacle, retrieved_context, is_shrink_request, current_step_text
         )
 
+    async def generate_task_plan(
+        self,
+        task_title: str,
+        energy_level: str,
+        retrieved_context: str = "",
+    ) -> list[Dict[str, Any]]:
+        return await self.fallback.generate_task_plan(task_title, energy_level, retrieved_context)
+
